@@ -125,6 +125,12 @@ func main() {
 	defer db.Close()
 
 	printResults(result)
+	
+	lib.SendWebhook(os.Getenv("DISCORD_WEBHOOK_URL"), map[string]interface{}{
+		"content": fmt.Sprintf("New flight search: %s → %s on %s. Best price: %.0f %s",
+			result.Origin, result.Destination, result.Date, result.BestPrice, result.Currency),
+	})
+
 
 	if *output != "" {
 		data, _ := json.MarshalIndent(result, "", "  ")
