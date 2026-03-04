@@ -143,8 +143,11 @@ func main() {
 }
 
 func notify(message string) {
+	host, _ := os.Hostname()
+
 	lib.SendWebhook(os.Getenv("DISCORD_WEBHOOK_URL"), map[string]interface{}{
-		"content": message,
+		"content": fmt.Sprintf("[%s] %s", host, message),
 	})
-	fmt.Printf("🔔 %s\n", message)
+
+	fmt.Printf("🔔[%s] %s\n", host, message)
 }
