@@ -71,10 +71,7 @@ func main() {
 	err := godotenv.Load()
 	if err != nil { log.Println("Warning: .env file not found, relying on environment variables") }
 
-	lib.SendWebhook(os.Getenv("DISCORD_WEBHOOK_URL"), map[string]interface{}{
-	"content": fmt.Sprintf("Starting flight search: on %s",
-		time.Now().AddDate(0, 1, 0).Format("2006-01-02")),
-	})
+	notify(fmt.Sprintf("Starting flight search: on %s", time.Now().AddDate(0, 1, 0).Format("2006-01-02")))
 
 	apiKey     := flag.String("key", os.Getenv("SERPAPI_KEY"), "SerpApi API key (or set SERPAPI_KEY env var)")
 	from       := flag.String("from", "GRU", "Departure IATA code (e.g. GRU, JFK, LHR)")
@@ -91,8 +88,8 @@ func main() {
 	flag.Parse()
 
 	if *apiKey == "" {
-		fmt.Fprintln(os.Stderr, "❌  API key required. Use -key flag or set SERPAPI_KEY env var.")
-		fmt.Fprintln(os.Stderr, "    Get a free key at https://serpapi.com/")
+		notify("❌  API key required. Use -key flag or set SERPAPI_KEY env var.")
+		notify("    Get a free key at https://serpapi.com/")
 		os.Exit(1)
 	}
 
@@ -110,11 +107,11 @@ func main() {
 		Country:      *country,
 	}
 
-	fmt.Printf("🔍 Searching flights %s → %s on %s...\n", params.DepartureID, params.ArrivalID, params.OutboundDate)
+	notify(fmt.Sprintf("🔍 Searching flights %s → %s on %s...\n", params.DepartureID, params.ArrivalID, params.OutboundDate))
 
 	result, err := lib.FetchFlights(params)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "❌  Error: %v\n", err)
+		notify(fmt.Sprintf("❌  Error: %v\n", err))
 		os.Exit(1)
 	}
 
@@ -131,18 +128,23 @@ func main() {
 
 	printResults(result)
 	
-	lib.SendWebhook(os.Getenv("DISCORD_WEBHOOK_URL"), map[string]interface{}{
-		"content": fmt.Sprintf("New flight search: %s → %s on %s. Best price: %.0f %s",
-			result.Origin, result.Destination, result.Date, result.BestPrice, result.Currency),
-	})
+	notify(fmt.Sprintf("✅ Search completed: %s → %s on %s. Best price: %.0f %s",
+		result.Origin, result.Destination, result.Date, result.BestPrice, result.Currency))
 
 
 	if *output != "" {
 		data, _ := json.MarshalIndent(result, "", "  ")
 		if err := os.WriteFile(*output, data, 0644); err != nil {
-			fmt.Fprintf(os.Stderr, "⚠️  Could not write output file: %v\n", err)
+			notify(fmt.Sprintf("⚠️  Could not write output file: %v\n", err))
 		} else {
-			fmt.Printf("💾 Results saved to %s\n", *output)
+			notify(fmt.Sprintf("💾 Results saved to %s", *output))
 		}
 	}
+}
+
+func notify(message string) {
+	lib.SendWebhook(os.Getenv("DISCORD_WEBHOOK_URL"), map[string]interface{}{
+		"content": message,
+	})
+	fmt.Printf("🔔 %s\n", message)
 }
