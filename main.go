@@ -23,14 +23,22 @@ func main() {
 	err := godotenv.Load()
 	if err != nil { log.Println("Warning: .env file not found, relying on environment variables") }
 
-	local, _ := time.LoadLocation("America/Sao_Paulo")
-	s := gocron.NewScheduler(local)
+	output, params := getFlagsValues()
+	if params.APIKey == "" {
+		notifier.Notify("API key required. Use -key flag or set SERPAPI_KEY env var.\n Get a free key at https://serpapi.com/")
+		os.Exit(1)
+	}
 
-	s.Every(1).Saturday().At("08:00").Do(search)
+	local, _ := time.LoadLocation("America/Sao_Paulo")
+	scheduler := gocron.NewScheduler(local)
+
+	scheduler.Every(1).Saturday().At("08:00").Do(func() {
+		search(params, output)
+	})
 
 	notifier.Notify("📅 Agendador iniciado. Aguardando próximo sábado...")
 
-	s.StartBlocking()
+	scheduler.StartBlocking()
 }
 
 func printResults(r *entities.SearchResult) {
@@ -80,43 +88,7 @@ func printResults(r *entities.SearchResult) {
 	printSection("Other Flights", r.OtherFlights)
 }
 
-func search() {
-	notifier.Notify(fmt.Sprintf("Starting flight search: on %s", time.Now().AddDate(0, 1, 0).Format("2006-01-02")))
-
-	apiKey     := flag.String("key", os.Getenv("SERPAPI_KEY"), "SerpApi API key (or set SERPAPI_KEY env var)")
-	from       := flag.String("from", "GRU", "Departure IATA code (e.g. GRU, JFK, LHR)")
-	to         := flag.String("to", "JFK", "Arrival IATA code (e.g. JFK, GRU, CDG)")
-	outbound   := flag.String("date", time.Now().AddDate(0, 1, 0).Format("2006-01-02"), "Outbound date YYYY-MM-DD")
-	returnDate := flag.String("return", "", "Return date YYYY-MM-DD (empty = one-way)")
-	adults     := flag.Int("adults", 1, "Number of adult passengers")
-	class      := flag.Int("class", 1, "Travel class: 1=Economy 2=Premium Economy 3=Business 4=First")
-	stops      := flag.Int("stops", 0, "Max stops: 0=Any 1=Nonstop 2=1stop 3=2stops")
-	currency   := flag.String("currency", "BRL", "Currency code (e.g. BRL, USD, EUR)")
-	lang       := flag.String("lang", "pt", "Language code (e.g. pt, en)")
-	country    := flag.String("country", "br", "Country code (e.g. br, us)")
-	output     := flag.String("output", "", "Save results to JSON file (optional)")
-	flag.Parse()
-
-	if *apiKey == "" {
-		notifier.Notify("API key required. Use -key flag or set SERPAPI_KEY env var.")
-		notifier.Notify("Get a free key at https://serpapi.com/")
-		os.Exit(1)
-	}
-
-	params := lib.SearchParams{
-		APIKey:       *apiKey,
-		DepartureID:  *from,
-		ArrivalID:    *to,
-		OutboundDate: *outbound,
-		ReturnDate:   *returnDate,
-		Adults:       *adults,
-		TravelClass:  *class,
-		Stops:        *stops,
-		Currency:     *currency,
-		Language:     *lang,
-		Country:      *country,
-	}
-
+func search(params lib.SearchParams, output *string) {
 	notifier.Notify(fmt.Sprintf("🔍 Searching flights %s → %s on %s...\n", params.DepartureID, params.ArrivalID, params.OutboundDate))
 
 	result, err := lib.FetchFlights(params)
@@ -169,4 +141,34 @@ func insertToDB(db *sql.DB, r *entities.SearchResult) error {
 		time.Now(),
 	)
 	return err
+}
+
+func getFlagsValues() (*string, lib.SearchParams) {
+	apiKey     := flag.String("key", os.Getenv("SERPAPI_KEY"), "SerpApi API key")
+	from       := flag.String("from", "GYN", "Departure IATA code")
+	to         := flag.String("to", "GRU", "Arrival IATA code")
+	outbound   := flag.String("date", "2026-05-02", "Outbound date YYYY-MM-DD")
+	returnDate := flag.String("return", "", "Return date YYYY-MM-DD")
+	adults     := flag.Int("adults", 1, "Number of adult passengers")
+	class      := flag.Int("class", 1, "Travel class")
+	stops      := flag.Int("stops", 0, "Max stops")
+	currency   := flag.String("currency", "BRL", "Currency code")
+	lang       := flag.String("lang", "pt", "Language code")
+	country    := flag.String("country", "br", "Country code")
+	output     := flag.String("output", "", "Save results to JSON file")
+	flag.Parse()
+
+	return output, lib.SearchParams{
+		APIKey:       *apiKey,
+		DepartureID:  *from,
+		ArrivalID:    *to,
+		OutboundDate: *outbound,
+		ReturnDate:   *returnDate,
+		Adults:       *adults,
+		TravelClass:  *class,
+		Stops:        *stops,
+		Currency:     *currency,
+		Language:     *lang,
+		Country:      *country,
+	}
 }
