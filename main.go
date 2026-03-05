@@ -172,10 +172,10 @@ func startGoogleFlightsCrawler(params lib.SearchParams, output *string) {
 	if er != nil {
 		notifier.Notify(fmt.Sprintf("⚠️ Could not insert into database: %v\n", er))
 	} else {
-		notifier.Notify("💾 Search result saved to database")
+		notifier.Notify("💾 Search saved to database")
 	}
 
-	if *output != "" {
+	if output != nil && *output != "" {
 		data, _ := json.MarshalIndent(result, "", "  ")
 		if err := os.WriteFile(*output, data, 0644); err != nil {
 			notifier.Notify(fmt.Sprintf("⚠️  Could not write output file: %v\n", err))

@@ -42,8 +42,8 @@ func InsertIntoDB(db *sql.DB, r *entities.SearchResult) error {
 		r.Destination,
 		r.BestFlights[0].Airline, 
 		r.BestFlights[0].Stops, 
-		r.BestFlights[0].Departure, 
-		r.BestFlights[0].Price,
+		r.BestFlights[0].Price, 
+		r.Date,
 		time.Now(),
 	)
 	return err
