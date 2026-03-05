@@ -8,7 +8,6 @@ import (
 	"sort"
 	"time"
 	"github.com/joho/godotenv"
-	"database/sql"
 	"github.com/go-co-op/gocron"
 
 	notifier "google-flights-crawler/notifier"
@@ -122,28 +121,20 @@ func printResults(r *entities.SearchResult) {
 func search(params lib.SearchParams, output *string) {
 	notifier.Notify(fmt.Sprintf("🔍 Searching flights %s → %s on %s...\n", params.DepartureID, params.ArrivalID, params.OutboundDate))
 
-	result, err := lib.FetchFlights(params)
+	result, err := lib.ScrapeFlights(params)
 	if err != nil {
 		notifier.Notify(fmt.Sprintf("❌  Error: %v\n", err))
 		os.Exit(1)
 	}
 
-	dbConfig := lib.DBConfig{
-		Username: os.Getenv("DB_USER"),
-		Password: os.Getenv("DB_PASSWORD"),
-		Host: os.Getenv("DB_HOST"),
-		Port: os.Getenv("DB_PORT"),
-		Database: os.Getenv("DB_NAME"),
-	}
-
-	db := lib.DbConnection(dbConfig)
+	db := lib.CreateDatabaseConnection()
 	defer db.Close()
 
 	printResults(result)
 	
 	notifier.Notify(fmt.Sprintf("✅ Search completed: %s → %s on %s. Best price: %.0f %s", result.Origin, result.Destination, result.Date, result.BestPrice, result.Currency))
 
-	er := insertToDB(db, result)
+	er := lib.InsertIntoDB(db, result)
 	if er != nil {
 		notifier.Notify(fmt.Sprintf("⚠️ Could not insert into database: %v\n", er))
 	} else {
@@ -158,18 +149,4 @@ func search(params lib.SearchParams, output *string) {
 			notifier.Notify(fmt.Sprintf("💾 Results saved to %s", *output))
 		}
 	}
-}
-
-func insertToDB(db *sql.DB, r *entities.SearchResult) error {
-	_, err := db.Exec(
-		"INSERT INTO flight_crawled (origin, destination, airline, stops, price, flightDate, searchDate) VALUES (?, ?, ?, ?, ?, ?, ?)",
-		r.Origin,
-		r.Destination,
-		r.BestFlights[0].Airline, 
-		r.BestFlights[0].Stops, 
-		r.BestFlights[0].Departure, 
-		r.BestFlights[0].Price,
-		time.Now(),
-	)
-	return err
 }

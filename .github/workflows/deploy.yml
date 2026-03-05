@@ -1,4 +1,4 @@
-name: Build and Push Scraper in Docker Image
+name: Build and Push Cron in Docker Image
 
 on:
   release:
@@ -25,7 +25,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKER_USERNAME }}/myscrapers
+          images: ${{ secrets.DOCKER_USERNAME }}/custom-cron-to-casaos
           tags: |
             type=semver,pattern={{version}}
             type=raw,value=latest

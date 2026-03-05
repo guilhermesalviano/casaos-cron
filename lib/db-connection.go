@@ -4,6 +4,10 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
+	"time"
+
+	entities "google-flights-crawler/entities"
 )
 
 type DBConfig struct {
@@ -29,4 +33,29 @@ func DbConnection(cfg DBConfig) *sql.DB {
 	log.Println("✅ Conectado ao MariaDB com sucesso!")
 
 	return db
+}
+
+func InsertIntoDB(db *sql.DB, r *entities.SearchResult) error {
+	_, err := db.Exec(
+		"INSERT INTO flight_crawled (origin, destination, airline, stops, price, flightDate, searchDate) VALUES (?, ?, ?, ?, ?, ?, ?)",
+		r.Origin,
+		r.Destination,
+		r.BestFlights[0].Airline, 
+		r.BestFlights[0].Stops, 
+		r.BestFlights[0].Departure, 
+		r.BestFlights[0].Price,
+		time.Now(),
+	)
+	return err
+}
+
+func CreateDatabaseConnection() *sql.DB {
+	cfg := DBConfig{
+		Username: os.Getenv("DB_USER"),
+		Password: os.Getenv("DB_PASSWORD"),
+		Host:     os.Getenv("DB_HOST"),
+		Port:     os.Getenv("DB_PORT"),
+		Database: os.Getenv("DB_NAME"),
+	}
+	return DbConnection(cfg)
 }

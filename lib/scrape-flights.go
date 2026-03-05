@@ -78,7 +78,7 @@ func BuildQuery(p SearchParams) url.Values {
 	return q
 }
 
-func FetchFlights(p SearchParams) (*entities.SearchResult, error) {
+func ScrapeFlights(p SearchParams) (*entities.SearchResult, error) {
 	const SERPAPIBASE = "https://serpapi.com/search"
 	reqURL := fmt.Sprintf("%s?%s", SERPAPIBASE, BuildQuery(p).Encode())
 
