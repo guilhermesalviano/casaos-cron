@@ -9,6 +9,7 @@ import (
 	"time"
 	"github.com/joho/godotenv"
 	"log"
+	"database/sql"
 	"github.com/go-co-op/gocron"
 
 	notifier "google-flights-crawler/notifier"
@@ -139,6 +140,13 @@ func search() {
 	
 	notifier.Notify(fmt.Sprintf("✅ Search completed: %s → %s on %s. Best price: %.0f %s", result.Origin, result.Destination, result.Date, result.BestPrice, result.Currency))
 
+	er := insertToDB(db, result)
+	if er != nil {
+		notifier.Notify(fmt.Sprintf("⚠️ Could not insert into database: %v\n", er))
+	} else {
+		notifier.Notify("💾 Search result saved to database")
+	}
+
 	if *output != "" {
 		data, _ := json.MarshalIndent(result, "", "  ")
 		if err := os.WriteFile(*output, data, 0644); err != nil {
@@ -147,4 +155,18 @@ func search() {
 			notifier.Notify(fmt.Sprintf("💾 Results saved to %s", *output))
 		}
 	}
+}
+
+func insertToDB(db *sql.DB, r *entities.SearchResult) error {
+	_, err := db.Exec(
+		"INSERT INTO flight_crawled (origin, destination, airline, stops, price, flightDate, searchDate) VALUES (?, ?, ?, ?, ?, ?, ?)",
+		r.Origin,
+		r.Destination,
+		r.BestFlights[0].Airline, 
+		r.BestFlights[0].Stops, 
+		r.BestFlights[0].Departure, 
+		r.BestFlights[0].Price,
+		time.Now(),
+	)
+	return err
 }
