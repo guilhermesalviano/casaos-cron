@@ -26,6 +26,7 @@ func main() {
 		notifier.Notify("Error: API key required. Use -key flag or set SERPAPI_KEY env var.")
 		os.Exit(1)
 	}
+	notifier.Notify("Api key loaded successfully")
 
 	path := "/media/ShareDatabase"
 	flights, err := utils.LoadSearchParams(path)
