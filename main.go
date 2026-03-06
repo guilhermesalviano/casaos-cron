@@ -28,7 +28,7 @@ func main() {
 	}
 	notifier.Notify("Api key loaded successfully")
 
-	path := "/media/ShareDatabase"
+	path := "/media/ShareDatabase/flightsToFollow.csv"
 	flights, err := utils.LoadSearchParams(path)
 	if err != nil {
 		flights, err = utils.LoadSearchParams("./flightsToFollow.csv")
