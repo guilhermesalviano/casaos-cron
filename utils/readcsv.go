@@ -4,6 +4,8 @@ import (
 	"encoding/csv"
 	"os"
 	"strconv"
+
+	notifier "google-flights-crawler/notifier"
 )
 
 type SchedulersCsv struct {
@@ -82,4 +84,16 @@ func LoadSearchParams(filePath string, SchedulerType string) ([]SchedulersCsv, e
 	}
 
 	return allParams, nil
+}
+
+func LoadSchedulersFromCSV(filePath string, SchedulerType string) ([]SchedulersCsv) {
+	schedulers, err := LoadSearchParams(filePath, SchedulerType)
+	if err != nil {
+		schedulers, err = LoadSearchParams("./schedulers.csv", SchedulerType)
+		if err != nil {
+			notifier.Notify("Error loading search params: " + err.Error())
+			os.Exit(1)
+		}
+	}
+	return schedulers
 }

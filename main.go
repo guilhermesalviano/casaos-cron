@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -30,33 +29,15 @@ func main() {
 	if err != nil {
 		notifier.Notify("Warning: .env file not found, relying on environment variables")
 	}
-
-	apiKey := getApiKey()
-	if *apiKey == "" {
-		notifier.Notify("Error: API key required. Use -key flag or set SERPAPI_KEY env var.")
-		os.Exit(1)
-	}
-	notifier.Notify("Api key loaded successfully")
+	apiKey := utils.GetApiKey()
 
 	local, _ := time.LoadLocation("America/Sao_Paulo")
 	scheduler := &Scheduler{gocron.NewScheduler(local)}
 
-	scheduler.scheduleFlightsCrawler(loadSchedulersFromCSV(path, "flights"), apiKey)
-	scheduler.scheduleAmazonWishlistCrawler(loadSchedulersFromCSV(path, "wishlists"))
+	scheduler.scheduleFlightsCrawler(utils.LoadSchedulersFromCSV(path, "flights"), apiKey)
+	scheduler.scheduleAmazonWishlistCrawler(utils.LoadSchedulersFromCSV(path, "wishlists"))
 
 	scheduler.StartBlocking()
-}
-
-func loadSchedulersFromCSV(filePath string, SchedulerType string) ([]utils.SchedulersCsv) {
-	schedulers, err := utils.LoadSearchParams(filePath, SchedulerType)
-	if err != nil {
-		schedulers, err = utils.LoadSearchParams("./schedulers.csv", SchedulerType)
-		if err != nil {
-			notifier.Notify("Error loading search params: " + err.Error())
-			os.Exit(1)
-		}
-	}
-	return schedulers
 }
 
 func (scheduler *Scheduler) scheduleAmazonWishlistCrawler(wishlists []utils.SchedulersCsv) {
@@ -103,52 +84,6 @@ func (scheduler *Scheduler) scheduleFlightsCrawler(flights []utils.SchedulersCsv
 			os.Exit(1)
 		}
 	}
-}
-
-func getApiKey() *string {
-	if key := os.Getenv("SERPAPI_KEY"); key != "" {
-		return &key
-	}
-
-	key := flag.String("key", "", "SerpApi API key")
-	flag.Parse()
-
-	if *key == "" {
-		notifier.Notify("SERPAPI_KEY não definida. Use a env var ou o flag -key")
-	}
-
-	return key
-}
-
-func getFlagsValuesOld() (lib.SearchParams, *string) {
-	apiKey := flag.String("key", os.Getenv("SERPAPI_KEY"), "SerpApi API key (or set SERPAPI_KEY env var)")
-	from := flag.String("from", "GRU", "Departure IATA code (e.g. GRU, JFK, LHR)")
-	to := flag.String("to", "JFK", "Arrival IATA code (e.g. JFK, GRU, CDG)")
-	outbound := flag.String("date", time.Now().AddDate(0, 1, 0).Format("2006-01-02"), "Outbound date YYYY-MM-DD")
-	returnDate := flag.String("return", "", "Return date YYYY-MM-DD (empty = one-way)")
-	adults := flag.Int("adults", 1, "Number of adult passengers")
-	class := flag.Int("class", 1, "Travel class: 1=Economy 2=Premium Economy 3=Business 4=First")
-	stops := flag.Int("stops", 0, "Max stops: 0=Any 1=Nonstop 2=1stop 3=2stops")
-	currency := flag.String("currency", "BRL", "Currency code (e.g. BRL, USD, EUR)")
-	lang := flag.String("lang", "pt", "Language code (e.g. pt, en)")
-	country := flag.String("country", "br", "Country code (e.g. br, us)")
-	output := flag.String("output", "", "Save results to JSON file (optional)")
-
-	params := lib.SearchParams{
-		APIKey:       *apiKey,
-		DepartureID:  *from,
-		ArrivalID:    *to,
-		OutboundDate: *outbound,
-		ReturnDate:   *returnDate,
-		Adults:       *adults,
-		TravelClass:  *class,
-		Stops:        *stops,
-		Currency:     *currency,
-		Language:     *lang,
-		Country:      *country,
-	}
-
-	return params, output
 }
 
 func printResults(r *entities.SearchResult) {
