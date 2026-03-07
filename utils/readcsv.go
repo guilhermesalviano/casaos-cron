@@ -71,7 +71,6 @@ func LoadSearchParams(filePath string, SchedulerType string) ([]SchedulersCsv, e
 			}
 		case "wishlists":
 			scheduler = SchedulersCsv{
-				SchedulerType: SchedulerType,
 				Day:           row[11],
 				Time:          row[12],
 			}
