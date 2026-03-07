@@ -25,16 +25,16 @@ type Scheduler struct {
 
 func main() {
 	path := "/media/ShareDatabase/schedulers.csv"
+
 	err := godotenv.Load()
 	if err != nil {
 		notifier.Notify("Warning: .env file not found, relying on environment variables")
 	}
-	apiKey := utils.GetApiKey()
 
 	local, _ := time.LoadLocation("America/Sao_Paulo")
 	scheduler := &Scheduler{gocron.NewScheduler(local)}
 
-	scheduler.scheduleFlightsCrawler(utils.LoadSchedulersFromCSV(path, "flights"), apiKey)
+	scheduler.scheduleFlightsCrawler(utils.LoadSchedulersFromCSV(path, "flights"), utils.GetApiKey())
 	scheduler.scheduleAmazonWishlistCrawler(utils.LoadSchedulersFromCSV(path, "wishlists"))
 
 	scheduler.StartBlocking()
