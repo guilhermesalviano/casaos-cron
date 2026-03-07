@@ -6,23 +6,23 @@ import (
 	"strconv"
 )
 
-type FlightCsv struct {
-	APIKey       string
-	DepartureID  string
-	ArrivalID    string
-	OutboundDate string
-	ReturnDate   string
-	Adults       int
-	TravelClass  int
-	Stops        int
-	Currency     string
-	Language     string
-	Country      string
-	Day          string
-	Time         string
+type SchedulersCsv struct {
+	DepartureID   string
+	ArrivalID     string
+	OutboundDate  string
+	ReturnDate    string
+	Adults        int
+	TravelClass   int
+	Stops         int
+	Currency      string
+	Language      string
+	Country       string
+	SchedulerType string
+	Day           string
+	Time          string
 }
 
-func LoadSearchParams(filePath string) ([]FlightCsv, error) {
+func LoadSearchParams(filePath string, SchedulerType string) ([]SchedulersCsv, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
@@ -39,28 +39,47 @@ func LoadSearchParams(filePath string) ([]FlightCsv, error) {
 		return nil, err
 	}
 
-	var allParams []FlightCsv
+	var allParams []SchedulersCsv
 
 	for _, row := range records {
 		adults, _ := strconv.Atoi(row[4])
-		class, _  := strconv.Atoi(row[5])
-		stops, _  := strconv.Atoi(row[6])
-
-		p := FlightCsv{
-			DepartureID:  row[0],
-			ArrivalID:    row[1],
-			OutboundDate: row[2],
-			ReturnDate:   row[3],
-			Adults:       adults,
-			TravelClass:  class,
-			Stops:        stops,
-			Currency:     row[7],
-			Language:     row[8],
-			Country:      row[9],
-			Day:      		row[10],
-			Time:      		row[11],
+		class, _ := strconv.Atoi(row[5])
+		stops, _ := strconv.Atoi(row[6])
+		SchedulerTypeCsv := row[0]
+		
+		if (SchedulerTypeCsv != SchedulerType) {
+			continue;
 		}
-		allParams = append(allParams, p)
+
+		var scheduler SchedulersCsv
+
+		switch SchedulerTypeCsv {
+		case "flights":
+			scheduler = SchedulersCsv{
+				DepartureID:  row[1],
+				ArrivalID:    row[2],
+				OutboundDate: row[3],
+				ReturnDate:   row[4],
+				Adults:       adults,
+				TravelClass:  class,
+				Stops:        stops,
+				Currency:     row[8],
+				Language:     row[9],
+				Country:      row[10],
+				Day:          row[11],
+				Time:         row[12],
+			}
+		case "wishlists":
+			scheduler = SchedulersCsv{
+				SchedulerType: SchedulerType,
+				Day:           row[11],
+				Time:          row[12],
+			}
+		default:
+			continue
+		}
+
+		allParams = append(allParams, scheduler)
 	}
 
 	return allParams, nil

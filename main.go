@@ -25,6 +25,7 @@ type Scheduler struct {
 }
 
 func main() {
+	path := "/media/ShareDatabase/schedulers.csv"
 	err := godotenv.Load()
 	if err != nil {
 		notifier.Notify("Warning: .env file not found, relying on environment variables")
@@ -37,38 +38,44 @@ func main() {
 	}
 	notifier.Notify("Api key loaded successfully")
 
-	path := "/media/ShareDatabase/flightsToFollow.csv"
-	flights, err := utils.LoadSearchParams(path)
+	local, _ := time.LoadLocation("America/Sao_Paulo")
+	scheduler := &Scheduler{gocron.NewScheduler(local)}
+
+	scheduler.scheduleFlightsCrawler(loadSchedulersFromCSV(path, "flights"), apiKey)
+	scheduler.scheduleAmazonWishlistCrawler(loadSchedulersFromCSV(path, "wishlists"))
+
+	scheduler.StartBlocking()
+}
+
+func loadSchedulersFromCSV(filePath string, SchedulerType string) ([]utils.SchedulersCsv) {
+	schedulers, err := utils.LoadSearchParams(filePath, SchedulerType)
 	if err != nil {
-		flights, err = utils.LoadSearchParams("./flightsToFollow.csv")
+		schedulers, err = utils.LoadSearchParams("./schedulers.csv", SchedulerType)
 		if err != nil {
 			notifier.Notify("Error loading search params: " + err.Error())
 			os.Exit(1)
 		}
 	}
-	notifier.Notify(fmt.Sprintf("Loaded %d flight search parameters", len(flights)))
-
-	local, _ := time.LoadLocation("America/Sao_Paulo")
-	scheduler := &Scheduler{gocron.NewScheduler(local)}
-
-	scheduler.scheduleAmazonWishlistCrawler()
-	scheduler.scheduleFlightsCrawler(flights, apiKey)
-
-	scheduler.StartBlocking()
+	return schedulers
 }
 
-func (scheduler *Scheduler) scheduleAmazonWishlistCrawler() {
-	notifier.Notify("📅 Schedule Amazon Wishlist Crawler (every Friday at 17:00)")
-	_, err := utils.ScheduleOnDay(scheduler.Scheduler, "Saturday").At("16:18").Do(func() {
-		startWishlistAmazonCrawler()
-	})
-	if err != nil {
-		notifier.Notify(fmt.Sprintf("Error scheduling job: %s", err))
-		os.Exit(1)
+func (scheduler *Scheduler) scheduleAmazonWishlistCrawler(wishlists []utils.SchedulersCsv) {
+	for _, wishItem := range wishlists {
+		notifier.Notify(fmt.Sprintf("📅 Schedule Amazon Wishlist Crawler (every %s at %s)",
+			wishItem.Day, wishItem.Time))
+
+		_, err := utils.ScheduleOnDay(scheduler.Scheduler, wishItem.Day).At(wishItem.Time).Do(func() {
+			startWishlistAmazonCrawler()
+		})
+
+		if err != nil {
+			notifier.Notify(fmt.Sprintf("Error scheduling job: %s", err))
+			os.Exit(1)
+		}
 	}
 }
 
-func (scheduler *Scheduler) scheduleFlightsCrawler(flights []utils.FlightCsv, apiKey *string) {
+func (scheduler *Scheduler) scheduleFlightsCrawler(flights []utils.SchedulersCsv, apiKey *string) {
 	for _, flight := range flights {
 		notifier.Notify(fmt.Sprintf("📅 Schedule: %s → %s on %s (every %s at %s)",
 			flight.DepartureID, flight.ArrivalID, flight.OutboundDate, flight.Day, flight.Time))
