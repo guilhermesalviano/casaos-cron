@@ -51,11 +51,21 @@ func main() {
 	local, _ := time.LoadLocation("America/Sao_Paulo")
 	scheduler := &Scheduler{gocron.NewScheduler(local)}
 
-	startWishlistAmazonCrawler()
-
-	// scheduler.scheduleFlightsCrawler(flights, apiKey)
+	scheduler.scheduleAmazonWishlistCrawler()
+	scheduler.scheduleFlightsCrawler(flights, apiKey)
 
 	scheduler.StartBlocking()
+}
+
+func (scheduler *Scheduler) scheduleAmazonWishlistCrawler() {
+	notifier.Notify("📅 Schedule Amazon Wishlist Crawler (every Friday at 17:00)")
+	_, err := utils.ScheduleOnDay(scheduler.Scheduler, "Saturday").At("16:18").Do(func() {
+		startWishlistAmazonCrawler()
+	})
+	if err != nil {
+		notifier.Notify(fmt.Sprintf("Error scheduling job: %s", err))
+		os.Exit(1)
+	}
 }
 
 func (scheduler *Scheduler) scheduleFlightsCrawler(flights []utils.FlightCsv, apiKey *string) {
