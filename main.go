@@ -4,16 +4,19 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"sort"
 	"time"
-	"github.com/joho/godotenv"
-	"github.com/go-co-op/gocron"
 
-	notifier "google-flights-crawler/notifier"
-	utils "google-flights-crawler/utils"
+	"github.com/go-co-op/gocron"
+	"github.com/joho/godotenv"
+
 	entities "google-flights-crawler/entities"
 	lib "google-flights-crawler/lib"
+	notifier "google-flights-crawler/notifier"
+	utils "google-flights-crawler/utils"
+
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -23,7 +26,9 @@ type Scheduler struct {
 
 func main() {
 	err := godotenv.Load()
-	if err != nil { notifier.Notify("Warning: .env file not found, relying on environment variables") }
+	if err != nil {
+		notifier.Notify("Warning: .env file not found, relying on environment variables")
+	}
 
 	apiKey := getApiKey()
 	if *apiKey == "" {
@@ -44,9 +49,11 @@ func main() {
 	notifier.Notify(fmt.Sprintf("Loaded %d flight search parameters", len(flights)))
 
 	local, _ := time.LoadLocation("America/Sao_Paulo")
-	scheduler := &Scheduler{ gocron.NewScheduler(local) }
+	scheduler := &Scheduler{gocron.NewScheduler(local)}
 
-	scheduler.scheduleFlightsCrawler(flights, apiKey)
+	startWishlistAmazonCrawler()
+
+	// scheduler.scheduleFlightsCrawler(flights, apiKey)
 
 	scheduler.StartBlocking()
 }
@@ -74,7 +81,7 @@ func (scheduler *Scheduler) scheduleFlightsCrawler(flights []utils.FlightCsv, ap
 			startGoogleFlightsCrawler(params, nil)
 		})
 
-		if err != nil { 
+		if err != nil {
 			notifier.Notify(fmt.Sprintf("Error scheduling job: %s", err))
 			os.Exit(1)
 		}
@@ -82,33 +89,33 @@ func (scheduler *Scheduler) scheduleFlightsCrawler(flights []utils.FlightCsv, ap
 }
 
 func getApiKey() *string {
-    if key := os.Getenv("SERPAPI_KEY"); key != "" {
-        return &key
-    }
+	if key := os.Getenv("SERPAPI_KEY"); key != "" {
+		return &key
+	}
 
-    key := flag.String("key", "", "SerpApi API key")
-    flag.Parse()
+	key := flag.String("key", "", "SerpApi API key")
+	flag.Parse()
 
-    if *key == "" {
-        notifier.Notify("SERPAPI_KEY não definida. Use a env var ou o flag -key")
-    }
+	if *key == "" {
+		notifier.Notify("SERPAPI_KEY não definida. Use a env var ou o flag -key")
+	}
 
-    return key
+	return key
 }
 
 func getFlagsValuesOld() (lib.SearchParams, *string) {
-	apiKey     := flag.String("key", os.Getenv("SERPAPI_KEY"), "SerpApi API key (or set SERPAPI_KEY env var)")
-	from       := flag.String("from", "GRU", "Departure IATA code (e.g. GRU, JFK, LHR)")
-	to         := flag.String("to", "JFK", "Arrival IATA code (e.g. JFK, GRU, CDG)")
-	outbound   := flag.String("date", time.Now().AddDate(0, 1, 0).Format("2006-01-02"), "Outbound date YYYY-MM-DD")
+	apiKey := flag.String("key", os.Getenv("SERPAPI_KEY"), "SerpApi API key (or set SERPAPI_KEY env var)")
+	from := flag.String("from", "GRU", "Departure IATA code (e.g. GRU, JFK, LHR)")
+	to := flag.String("to", "JFK", "Arrival IATA code (e.g. JFK, GRU, CDG)")
+	outbound := flag.String("date", time.Now().AddDate(0, 1, 0).Format("2006-01-02"), "Outbound date YYYY-MM-DD")
 	returnDate := flag.String("return", "", "Return date YYYY-MM-DD (empty = one-way)")
-	adults     := flag.Int("adults", 1, "Number of adult passengers")
-	class      := flag.Int("class", 1, "Travel class: 1=Economy 2=Premium Economy 3=Business 4=First")
-	stops      := flag.Int("stops", 0, "Max stops: 0=Any 1=Nonstop 2=1stop 3=2stops")
-	currency   := flag.String("currency", "BRL", "Currency code (e.g. BRL, USD, EUR)")
-	lang       := flag.String("lang", "pt", "Language code (e.g. pt, en)")
-	country    := flag.String("country", "br", "Country code (e.g. br, us)")
-	output     := flag.String("output", "", "Save results to JSON file (optional)")
+	adults := flag.Int("adults", 1, "Number of adult passengers")
+	class := flag.Int("class", 1, "Travel class: 1=Economy 2=Premium Economy 3=Business 4=First")
+	stops := flag.Int("stops", 0, "Max stops: 0=Any 1=Nonstop 2=1stop 3=2stops")
+	currency := flag.String("currency", "BRL", "Currency code (e.g. BRL, USD, EUR)")
+	lang := flag.String("lang", "pt", "Language code (e.g. pt, en)")
+	country := flag.String("country", "br", "Country code (e.g. br, us)")
+	output := flag.String("output", "", "Save results to JSON file (optional)")
 
 	params := lib.SearchParams{
 		APIKey:       *apiKey,
@@ -174,6 +181,30 @@ func printResults(r *entities.SearchResult) {
 	printSection("Other Flights", r.OtherFlights)
 }
 
+func startWishlistAmazonCrawler() {
+	notifier.Notify("Starting crawling amazon wishlist...")
+	results, err := lib.ScrapeAmazonWishlist()
+	if err != nil {
+		notifier.Notify("Error scraping Amazon wishlist: " + err.Error())
+		os.Exit(1)
+	}
+	notifier.Notify(fmt.Sprintf("Amazon wishlist scraped successfully: %d items found", len(results)))
+
+	db := lib.CreateDatabaseConnection()
+	defer db.Close()
+
+	var er error
+	for index, result := range results {
+		er = lib.SaveWishlistAmazonPricesInDB(db, &result)
+		if er == nil {
+			log.Printf("💾 Index %d saved at database.", index)
+		}
+	}
+	if er != nil {
+		notifier.Notify(fmt.Sprintf("⚠️ Could not insert into database: %v\n", er))
+	}
+}
+
 func startGoogleFlightsCrawler(params lib.SearchParams, output *string) {
 	notifier.Notify(fmt.Sprintf("🔍 Searching flights %s → %s on %s...\n", params.DepartureID, params.ArrivalID, params.OutboundDate))
 
@@ -187,10 +218,10 @@ func startGoogleFlightsCrawler(params lib.SearchParams, output *string) {
 	defer db.Close()
 
 	printResults(result)
-	
+
 	notifier.Notify(fmt.Sprintf("✅ Search completed: %s → %s on %s. Best price: %.0f %s", result.Origin, result.Destination, result.Date, result.BestPrice, result.Currency))
 
-	er := lib.InsertIntoDB(db, result)
+	er := lib.SaveFlightsInDB(db, result)
 	if er != nil {
 		notifier.Notify(fmt.Sprintf("⚠️ Could not insert into database: %v\n", er))
 	} else {

@@ -5,18 +5,13 @@ import (
 	"log"
 	"os"
 	"strings"
-
+	
 	"github.com/gocolly/colly/v2"
+	"google-flights-crawler/entities"
 )
 
-type WishlistItem struct {
-	Title string `json:"title"`
-	Price string `json:"price"`
-	Link  string `json:"link"`
-}
-
-func ScrapeAmazonWishlist() ([]WishlistItem, error) {
-	var items []WishlistItem
+func ScrapeAmazonWishlist() ([]entities.WishlistItem, error) {
+	var items []entities.WishlistItem
 
 	c := colly.NewCollector(
 		colly.UserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"),
@@ -40,7 +35,7 @@ func ScrapeAmazonWishlist() ([]WishlistItem, error) {
 		}
 
 		if title != "" {
-			items = append(items, WishlistItem{
+			items = append(items, entities.WishlistItem{
 				Title: title,
 				Price: price,
 				Link:  e.Request.AbsoluteURL(link),

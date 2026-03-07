@@ -35,7 +35,7 @@ func DbConnection(cfg DBConfig) *sql.DB {
 	return db
 }
 
-func InsertIntoDB(db *sql.DB, r *entities.SearchResult) error {
+func SaveFlightsInDB(db *sql.DB, r *entities.SearchResult) error {
 	_, err := db.Exec(
 		"INSERT INTO flight_crawled (origin, destination, airline, stops, price, flightDate, searchDate) VALUES (?, ?, ?, ?, ?, ?, ?)",
 		r.Origin,
@@ -44,7 +44,18 @@ func InsertIntoDB(db *sql.DB, r *entities.SearchResult) error {
 		r.BestFlights[0].Stops, 
 		r.BestFlights[0].Price, 
 		r.Date,
-		time.Now(),
+		time.Now().Format("2006-01-02 15:04:05"),
+	)
+	return err
+}
+
+func SaveWishlistAmazonPricesInDB(db *sql.DB, r *entities.WishlistItem) error {
+	_, err := db.Exec(
+		"INSERT INTO wishlist_amazon (title, price, link, search_date) VALUES (?, ?, ?, ?)",
+		r.Title,
+		r.Price,
+		r.Link,
+		time.Now().Format("2006-01-02 15:04:05"),
 	)
 	return err
 }
