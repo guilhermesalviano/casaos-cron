@@ -26,7 +26,7 @@ type Scheduler struct {
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		notifier.Notify("Warning: .env file not found, relying on environment variables")
+		log.Println("Warning: .env file not found, relying on environment variables")
 	}
 
 	path := os.Getenv("SCHEDULERS_FILE_PATH")
@@ -42,8 +42,8 @@ func main() {
 
 func (scheduler *Scheduler) scheduleAmazonWishlistCrawler(wishlists []utils.SchedulersCsv) {
 	for _, wishItem := range wishlists {
-		notifier.Notify(fmt.Sprintf("📅 Schedule Amazon Wishlist Crawler (every %s at %s)",
-			wishItem.Day, wishItem.Time))
+		log.Printf("📅 Schedule Amazon Wishlist Crawler (every %s at %s)",
+			wishItem.Day, wishItem.Time)
 
 		_, err := utils.ScheduleOnDay(scheduler.Scheduler, wishItem.Day).At(wishItem.Time).Do(func() {
 			startWishlistAmazonCrawler()
@@ -58,8 +58,8 @@ func (scheduler *Scheduler) scheduleAmazonWishlistCrawler(wishlists []utils.Sche
 
 func (scheduler *Scheduler) scheduleFlightsCrawler(flights []utils.SchedulersCsv, apiKey *string) {
 	for _, flight := range flights {
-		notifier.Notify(fmt.Sprintf("📅 Schedule: %s → %s on %s (every %s at %s)",
-			flight.DepartureID, flight.ArrivalID, flight.OutboundDate, flight.Day, flight.Time))
+		log.Printf("📅 Schedule: %s → %s on %s (every %s at %s)",
+			flight.DepartureID, flight.ArrivalID, flight.OutboundDate, flight.Day, flight.Time)
 
 		params := lib.SearchParams{
 			APIKey:       *apiKey,
