@@ -60,7 +60,7 @@ func ScrapeAmazonWishlist() ([]entities.WishlistItem, error) {
 		return nil, fmt.Errorf("WISHLIST_ID environment variable is required")
 	}
 
-	baseURL := fmt.Sprintf("https://www.amazon.com.br/hz/wishlist/ls/%s?_encoding=UTF8&sort=price-asc", wishlistID)
+	baseURL := fmt.Sprintf("https://www.amazon.com.br/hz/wishlist/ls/%s?_encoding=UTF8&sort=price-asc&filter=unpurchased", wishlistID)
 	
 	err := c.Visit(baseURL)
 	if err != nil {
