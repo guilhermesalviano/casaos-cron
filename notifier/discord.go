@@ -14,7 +14,7 @@ func Notify(message string) {
 	log.Printf("🔔 [%s] %s\n", host, message)
 
 	if webhookURL == "" {
-		log.Println("⚠️ DISCORD_WEBHOOK_URL não configurada")
+		log.Println("DISCORD_WEBHOOK_URL not defined")
 		return
 	}
 
