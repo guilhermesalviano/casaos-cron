@@ -40,6 +40,15 @@ func main() {
 	scheduler.StartBlocking()
 }
 
+func aiAnalysis(prompt string) string {
+    analysis, err := lib.AnalyzeWithGemini(prompt)
+    if err != nil {
+        log.Printf("❌ Gemini Error: %v\n", err)
+        notifier.Notify("❌ Gemini Error: " + err.Error())
+    }
+	return analysis
+}
+
 func (scheduler *Scheduler) scheduleAmazonWishlistCrawler(wishlists []utils.SchedulersCsv) {
 	for _, wishItem := range wishlists {
 		log.Printf("📅 Schedule Amazon Wishlist Crawler (every %s at %s)",
