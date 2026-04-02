@@ -2,14 +2,13 @@ package scraper
 
 import (
 	"database/sql"
-	"google-flights-crawler/domain"
-	"google-flights-crawler/internal/notify"
-	db "google-flights-crawler/internal/store"
-	"google-flights-crawler/internal/wishlist"
 	"log"
 	"time"
+	"cron-to-casaos/domain"
+	"cron-to-casaos/internal/notify"
+	db "cron-to-casaos/internal/store"
+	"cron-to-casaos/internal/wishlist"
 )
-
 
 func AmazonWishlistCrawler() {
 	notify.Notify("Starting crawling amazon wishlist...")

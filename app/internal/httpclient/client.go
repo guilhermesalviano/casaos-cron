@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func GetFromBackend(endpoint string) ([]byte, error) {
+func HttpClient(endpoint string) ([]byte, error) {
 	backendURL := os.Getenv("BACKEND_URL")
 	if backendURL == "" {
 		return nil, fmt.Errorf("BACKEND_URL not set in environment")

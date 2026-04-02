@@ -1,4 +1,4 @@
-module google-flights-crawler
+module cron-to-casaos
 
 go 1.25.0
 

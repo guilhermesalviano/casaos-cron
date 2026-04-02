@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"time"
 	"net/url"
 	"strconv"
-
-	"google-flights-crawler/domain"
+	"time"
+	"cron-to-casaos/domain"
 )
 
 func BuildQuery(p domain.SearchParams) url.Values {

@@ -10,11 +10,11 @@ import (
 	"github.com/go-co-op/gocron"
 	"github.com/joho/godotenv"
 
-	"google-flights-crawler/domain"
-	"google-flights-crawler/internal/ai"
-	"google-flights-crawler/internal/notify"
-	"google-flights-crawler/internal/scraper"
-	"google-flights-crawler/utils"
+	"cron-to-casaos/domain"
+	"cron-to-casaos/internal/ai"
+	"cron-to-casaos/internal/notify"
+	"cron-to-casaos/internal/scraper"
+	"cron-to-casaos/utils"
 )
 
 type Scheduler struct {
@@ -39,11 +39,11 @@ func main() {
 }
 
 func aiAnalysis(prompt string) string {
-    analysis, err := ai.AnalyzeWithGemini(prompt)
-    if err != nil {
-        log.Printf("❌ Gemini Error: %v\n", err)
-        notify.Notify("❌ Gemini Error: " + err.Error())
-    }
+	analysis, err := ai.AnalyzeWithGemini(prompt)
+	if err != nil {
+		log.Printf("❌ Gemini Error: %v\n", err)
+		notify.Notify("❌ Gemini Error: " + err.Error())
+	}
 	return analysis
 }
 

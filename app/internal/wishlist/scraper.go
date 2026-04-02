@@ -5,9 +5,9 @@ import (
 	"log"
 	"os"
 	"strings"
-	
+
 	"github.com/gocolly/colly/v2"
-	"google-flights-crawler/domain"
+	"cron-to-casaos/domain"
 )
 
 func ScrapeAmazonWishlist() ([]domain.WishlistItem, error) {
@@ -61,7 +61,7 @@ func ScrapeAmazonWishlist() ([]domain.WishlistItem, error) {
 	}
 
 	baseURL := fmt.Sprintf("https://www.amazon.com.br/hz/wishlist/ls/%s?_encoding=UTF8&sort=price-asc&filter=unpurchased", wishlistID)
-	
+
 	err := c.Visit(baseURL)
 	if err != nil {
 		return nil, err

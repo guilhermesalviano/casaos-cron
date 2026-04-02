@@ -88,7 +88,7 @@ func LoadSearchParams(filePath string, SchedulerType string) ([]SchedulersCsv, e
 func LoadSchedulersFromCSV(filePath string, SchedulerType string) ([]SchedulersCsv) {
 	schedulers, err := LoadSearchParams(filePath, SchedulerType)
 	if err != nil {
-		schedulers, err = LoadSearchParams("./pkg/config/schedules.csv", SchedulerType)
+		schedulers, err = LoadSearchParams("./config/schedules.csv", SchedulerType)
 		if err != nil {
 			log.Printf("Error loading search params: %v", err)
 			os.Exit(1)

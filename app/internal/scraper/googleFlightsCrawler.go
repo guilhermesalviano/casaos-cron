@@ -4,15 +4,14 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"google-flights-crawler/domain"
-	"google-flights-crawler/internal/flights"
-	"google-flights-crawler/internal/notify"
-	db "google-flights-crawler/internal/store"
 	"log"
 	"os"
 	"time"
+	"cron-to-casaos/domain"
+	"cron-to-casaos/internal/flights"
+	"cron-to-casaos/internal/notify"
+	db "cron-to-casaos/internal/store"
 )
-
 
 func GoogleFlightsCrawler(params domain.SearchParams, output *string) {
 	notify.Notify(fmt.Sprintf("Starting crawling google flights %s → %s on %s...\n", params.DepartureID, params.ArrivalID, params.OutboundDate))
@@ -50,9 +49,9 @@ func saveFlightsInDB(db *sql.DB, r *domain.SearchResult) error {
 		"INSERT INTO flight_crawled (origin, destination, airline, stops, price, flightDate, searchDate) VALUES (?, ?, ?, ?, ?, ?, ?)",
 		r.Origin,
 		r.Destination,
-		r.BestFlights[0].Airline, 
-		r.BestFlights[0].Stops, 
-		r.BestFlights[0].Price, 
+		r.BestFlights[0].Airline,
+		r.BestFlights[0].Stops,
+		r.BestFlights[0].Price,
 		r.Date,
 		time.Now().Format("2006-01-02 15:04:05"),
 	)
