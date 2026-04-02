@@ -1,132 +1,93 @@
-# Google Flights Crawler (Go)
+# My Cron - selfhosted
 
-A command-line tool to fetch and display the best flight prices from Google Flights via the **SerpApi** service.
+A Go-based application that schedules automated web scraping tasks for Google Flights and Amazon Wishlists using cron-like scheduling. It integrates with AI analysis via Gemini, sends notifications via Discord or NTFY, and stores data in a MySQL database.
 
-> Google Flights is heavily JavaScript-rendered and actively blocks scrapers.
-> SerpApi handles headless browsers, proxy rotation, and CAPTCHAs for you.
-> A **free tier** gives you 100 searches/month — enough for personal use.
+## Features
 
----
+- **Scheduled Flights Crawling**: Automatically scrape Google Flights data based on predefined schedules from a CSV file.
+- **Amazon Wishlist Monitoring**: Crawl Amazon wishlists for price tracking and availability.
+- **AI-Powered Analysis**: Uses Google's Gemini AI to analyze scraped data.
+- **Flexible Scheduling**: Uses gocron for precise scheduling (e.g., specific days and times).
+- **Notification System**: Send alerts via Discord webhooks or NTFY.
+- **Database Integration**: Stores results in MySQL database.
+- **Docker Support**: Containerized deployment with Docker Compose.
+- **Environment Configuration**: Uses .env files for sensitive configuration.
 
-## Setup
+## Prerequisites
 
-### 1. Get a free SerpApi key
-Sign up at https://serpapi.com/ — no credit card required for the free tier.
+- Go 1.25.0 or later
+- MySQL database
+- API keys for:
+  - SerpAPI (for Google Flights scraping)
+  - Google Gemini AI
+  - Discord webhook (optional)
+- Docker and Docker Compose (for containerized deployment)
 
-### 2. Build
-```bash
-go build -o flights ./main.go
+## Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/guilhermesalviano/google-flights-crawler.git
+   cd google-flights-crawler
+   ```
+
+2. Install dependencies:
+   ```bash
+   go mod download
+   ```
+
+3. Set up environment variables (see Configuration section).
+
+## Configuration
+
+Create a `.env` file in the root directory with the following variables:
+
+```env
+DB_HOST=your_mysql_host
+DB_NAME=your_database_name
+DB_PASSWORD=your_db_password
+DB_PORT=your_db_port
+DB_USER=your_db_username
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/your_webhook_id/your_webhook_token
+SERPAPI_KEY=your_serpapi_key
+SCHEDULERS_FILE_PATH=path/to/schedulers.csv
 ```
 
-### 3. Set your API key
-```bash
-export SERPAPI_KEY="your_key_here"
-```
-Or pass it directly with the `-key` flag.
+### Schedulers CSV Format
 
----
+The application uses a CSV file (`schedulers.csv`) to define scheduled tasks. The format includes:
+
+- For flights: departure_id, arrival_id, outbound_date, return_date, adults, travel_class, stops, currency, language, country, day, time
+- For wishlists: wishlist_url, day, time
+
+Example `schedulers.csv`:
+```
+type,departure_id,arrival_id,outbound_date,return_date,adults,travel_class,stops,currency,language,country,day,time
+flights,GRU,JFK,2024-12-01,2024-12-15,1,economy,0,USD,en,US,monday,09:00
+wishlists,tuesday,10:00
+```
 
 ## Usage
 
-```bash
-# Basic one-way search (GRU → JFK next month)
-./flights -from GRU -to JFK -date 2025-04-10
+### Running Locally
 
-# Round trip search
-./flights -from GRU -to LIS -date 2025-04-10 -return 2025-04-20
+1. Ensure your `.env` file is configured.
+2. Run the application:
+   ```bash
+   go run main.go
+   ```
 
-# Business class, nonstop only, output to JSON
-./flights -from GRU -to MIA -date 2025-04-15 -class 3 -stops 1 -output result.json
+The application will start the scheduler and begin executing tasks according to the CSV schedules.
 
-# All flags
-./flights \
-  -key  YOUR_API_KEY  \   # or use SERPAPI_KEY env var
-  -from GRU           \   # departure IATA code
-  -to   JFK           \   # arrival IATA code
-  -date 2025-04-10    \   # outbound date
-  -return 2025-04-20  \   # return date (omit for one-way)
-  -adults 2           \   # number of adult passengers
-  -class  1           \   # 1=Economy 2=Premium 3=Business 4=First
-  -stops  0           \   # 0=Any 1=Nonstop 2=1stop 3=2stops
-  -currency BRL       \   # currency code
-  -lang     pt        \   # language (pt, en, es, fr...)
-  -country  br        \   # country (br, us, fr...)
-  -output result.json     # save JSON output (optional)
-```
+### Docker Deployment
 
----
+1. Update the `docker-compose.yml` with your environment variables.
+2. Run with Docker Compose:
+   ```bash
+   docker-compose up -d
+   ```
 
-## Example Output
+## License
 
-```
-🔍 Searching flights GRU → JFK on 2025-04-10...
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-╔══════════════════════════════════════════════════════╗
-║         Google Flights — Best Price Crawler          ║
-╚══════════════════════════════════════════════════════╝
-  Route     : GRU → JFK
-  Outbound  : 2025-04-10
-  Searched  : 2025-03-03 14:22:10 UTC
-  ★ Best price: 2840 BRL
-
-── Best Flights (3 results) ──────────────────────────────
-  Airline                Dep      Arr      Duration   Stops  Price
-  ─────────────────────────────────────────────────────────
-  LATAM Airlines         23:10    07:35    10h25m     nonstop 2840 BRL
-  American Airlines      18:00    06:20    13h20m     1 stop  3120 BRL
-  United Airlines        19:45    09:15    14h30m     1 stop  3390 BRL
-```
-
----
-
-## JSON Output Structure
-
-```json
-{
-  "searched_at": "2025-03-03T14:22:10Z",
-  "origin": "GRU",
-  "destination": "JFK",
-  "outbound_date": "2025-04-10",
-  "best_flights": [
-    {
-      "airline": "LATAM Airlines",
-      "flight_number": "LA 8084",
-      "departure_time": "2025-04-10 23:10",
-      "arrival_time": "2025-04-11 07:35",
-      "duration_minutes": 625,
-      "stops": 0,
-      "price": 2840,
-      "currency": "BRL",
-      "carbon_emissions_kg": 312
-    }
-  ],
-  "other_flights": [...],
-  "best_price": 2840,
-  "currency": "BRL"
-}
-```
-
----
-
-## Common IATA Codes (Brazil)
-
-| Code | Airport |
-|------|---------|
-| GRU  | São Paulo (Guarulhos) |
-| CGH  | São Paulo (Congonhas) |
-| GIG  | Rio de Janeiro (Galeão) |
-| BSB  | Brasília |
-| CNF  | Belo Horizonte |
-| SSA  | Salvador |
-| REC  | Recife |
-| FOR  | Fortaleza |
-| CWB  | Curitiba |
-| POA  | Porto Alegre |
-
----
-
-## Notes
-
-- **No third-party dependencies** — only the Go standard library is used.
-- Results are sorted by price (cheapest first).
-- The crawler respects Google's terms of service by routing through SerpApi.
