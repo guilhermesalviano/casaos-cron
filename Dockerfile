@@ -7,7 +7,7 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o flights .
+RUN go build -o scheduler .
 
 FROM alpine:3.19
 
@@ -15,9 +15,9 @@ RUN apk add --no-cache ca-certificates tzdata
 
 WORKDIR /app
 
-COPY --from=builder /app/flights .
+COPY --from=builder /app/scheduler .
 
 RUN mkdir -p /app/output
 
-ENTRYPOINT ["./flights"]
+ENTRYPOINT ["./scheduler"]
 CMD ["--help"]

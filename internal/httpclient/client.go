@@ -1,4 +1,4 @@
-package lib
+package httpclient
 
 import (
 	"crypto/tls"

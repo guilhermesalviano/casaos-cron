@@ -1,4 +1,4 @@
-package lib
+package flights
 
 import (
 	"encoding/json"
@@ -9,53 +9,10 @@ import (
 	"net/url"
 	"strconv"
 
-	entities "google-flights-crawler/entities"
+	"google-flights-crawler/domain"
 )
 
-type serpLayover struct {
-	Name     string `json:"name"`
-	ID       string `json:"id"`
-	Duration int    `json:"duration"`
-}
-
-type serpFlight struct {
-	Flights []struct {
-		DepartureAirport struct{ Time string `json:"time"` } `json:"departure_airport"`
-		ArrivalAirport   struct{ Time string `json:"time"` } `json:"arrival_airport"`
-		Duration         int    `json:"duration"`
-		Airline          string `json:"airline"`
-		FlightNumber     string `json:"flight_number"`
-	} `json:"flights"`
-	Layovers        []serpLayover `json:"layovers"`
-	TotalDuration   int `json:"total_duration"`
-	CarbonEmissions struct {
-		ThisFlightKg int `json:"this_flight"`
-	} `json:"carbon_emissions"`
-	Price   int    `json:"price"`
-	Airline string `json:"airline,omitempty"`
-}
-
-type serpResponse struct {
-	BestFlights  []serpFlight `json:"best_flights"`
-	OtherFlights []serpFlight `json:"other_flights"`
-	Error        string       `json:"error,omitempty"`
-}
-
-type SearchParams struct {
-	APIKey       string
-	DepartureID  string // IATA code, e.g. "GRU"
-	ArrivalID    string // IATA code, e.g. "JFK"
-	OutboundDate string // YYYY-MM-DD
-	ReturnDate   string // YYYY-MM-DD (empty = one-way)
-	Adults       int
-	TravelClass  int // 1=Economy 2=Premium 3=Business 4=First
-	Stops        int // 0=Any 1=Nonstop 2=1stop 3=2stops
-	Currency     string // e.g. "BRL", "USD"
-	Language     string // e.g. "pt", "en"
-	Country      string // e.g. "br", "us"
-}
-
-func BuildQuery(p SearchParams) url.Values {
+func BuildQuery(p domain.SearchParams) url.Values {
 	q := url.Values{}
 	q.Set("engine", "google_flights")
 	q.Set("api_key", p.APIKey)
@@ -78,7 +35,7 @@ func BuildQuery(p SearchParams) url.Values {
 	return q
 }
 
-func ScrapeFlights(p SearchParams) (*entities.SearchResult, error) {
+func ScrapeFlights(p domain.SearchParams) (*domain.SearchResult, error) {
 	const SERPAPIBASE = "https://serpapi.com/search"
 	reqURL := fmt.Sprintf("%s?%s", SERPAPIBASE, BuildQuery(p).Encode())
 
@@ -94,7 +51,7 @@ func ScrapeFlights(p SearchParams) (*entities.SearchResult, error) {
 		return nil, fmt.Errorf("reading response: %w", err)
 	}
 
-	var raw serpResponse
+	var raw domain.SerpResponse
 	if err := json.Unmarshal(body, &raw); err != nil {
 		return nil, fmt.Errorf("parsing JSON: %w", err)
 	}
@@ -102,7 +59,7 @@ func ScrapeFlights(p SearchParams) (*entities.SearchResult, error) {
 		return nil, fmt.Errorf("API error: %s", raw.Error)
 	}
 
-	result := &entities.SearchResult{
+	result := &domain.SearchResult{
 		SearchedAt:  time.Now().UTC(),
 		Origin:      p.DepartureID,
 		Destination: p.ArrivalID,
@@ -111,8 +68,8 @@ func ScrapeFlights(p SearchParams) (*entities.SearchResult, error) {
 		Currency:    p.Currency,
 	}
 
-	parse := func(raw []serpFlight) []entities.Flight {
-		var out []entities.Flight
+	parse := func(raw []domain.SerpFlight) []domain.Flight {
+		var out []domain.Flight
 		for _, sf := range raw {
 			airline := sf.Airline
 			flightNum := ""
@@ -126,7 +83,7 @@ func ScrapeFlights(p SearchParams) (*entities.SearchResult, error) {
 				depTime = sf.Flights[0].DepartureAirport.Time
 				arrTime = sf.Flights[len(sf.Flights)-1].ArrivalAirport.Time
 			}
-			out = append(out, entities.Flight{
+			out = append(out, domain.Flight{
 				Airline:      airline,
 				FlightNumber: flightNum,
 				Departure:    depTime,

@@ -10,9 +10,10 @@ import (
 	"github.com/go-co-op/gocron"
 	"github.com/joho/godotenv"
 
-	"google-flights-crawler/lib"
-	"google-flights-crawler/notifier"
-	"google-flights-crawler/services"
+	"google-flights-crawler/domain"
+	"google-flights-crawler/internal/ai"
+	"google-flights-crawler/internal/notify"
+	"google-flights-crawler/internal/scraper"
 	"google-flights-crawler/utils"
 )
 
@@ -38,10 +39,10 @@ func main() {
 }
 
 func aiAnalysis(prompt string) string {
-    analysis, err := lib.AnalyzeWithGemini(prompt)
+    analysis, err := ai.AnalyzeWithGemini(prompt)
     if err != nil {
         log.Printf("❌ Gemini Error: %v\n", err)
-        notifier.Notify("❌ Gemini Error: " + err.Error())
+        notify.Notify("❌ Gemini Error: " + err.Error())
     }
 	return analysis
 }
@@ -52,11 +53,11 @@ func (scheduler *Scheduler) scheduleAmazonWishlistCrawler(wishlists []utils.Sche
 			wishItem.Day, wishItem.Time)
 
 		_, err := utils.ScheduleOnDay(scheduler.Scheduler, wishItem.Day).At(wishItem.Time).Do(func() {
-			services.AmazonWishlistCrawler()
+			scraper.AmazonWishlistCrawler()
 		})
 
 		if err != nil {
-			notifier.Notify(fmt.Sprintf("Error scheduling job: %s", err))
+			notify.Notify(fmt.Sprintf("Error scheduling job: %s", err))
 			os.Exit(1)
 		}
 	}
@@ -67,7 +68,7 @@ func (scheduler *Scheduler) scheduleFlightsCrawler(flights []utils.SchedulersCsv
 		log.Printf("📅 Schedule: %s → %s on %s (every %s at %s)",
 			flight.DepartureID, flight.ArrivalID, flight.OutboundDate, flight.Day, flight.Time)
 
-		params := lib.SearchParams{
+		params := domain.SearchParams{
 			APIKey:       *apiKey,
 			DepartureID:  flight.DepartureID,
 			ArrivalID:    flight.ArrivalID,
@@ -82,13 +83,12 @@ func (scheduler *Scheduler) scheduleFlightsCrawler(flights []utils.SchedulersCsv
 		}
 
 		_, err := utils.ScheduleOnDay(scheduler.Scheduler, flight.Day).At(flight.Time).Do(func() {
-			services.GoogleFlightsCrawler(params, nil)
+			scraper.GoogleFlightsCrawler(params, nil)
 		})
 
 		if err != nil {
-			notifier.Notify(fmt.Sprintf("Error scheduling job: %s", err))
+			notify.Notify(fmt.Sprintf("Error scheduling job: %s", err))
 			os.Exit(1)
 		}
 	}
 }
-

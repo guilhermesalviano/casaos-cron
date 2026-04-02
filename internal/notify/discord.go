@@ -1,14 +1,31 @@
-package lib
+package notify
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"time"
 )
 
-// SendWebhook envia um payload JSON para uma URL específica
+func Notify(message string) {
+	host, _ := os.Hostname()
+	webhookURL := os.Getenv("DISCORD_WEBHOOK_URL")
+
+	log.Printf("🔔 [%s] %s\n", host, message)
+
+	if webhookURL == "" {
+		log.Println("DISCORD_WEBHOOK_URL not defined")
+		return
+	}
+
+	SendWebhook(webhookURL, map[string]interface{}{
+		"content": fmt.Sprintf("[%s] %s", host, message),
+	})
+}
+
 func SendWebhook(url string, payload interface{}) error {
 	jsonData, err := json.Marshal(payload)
 	if err != nil {

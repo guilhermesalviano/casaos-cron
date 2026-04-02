@@ -1,13 +1,10 @@
-package lib
+package db
 
 import (
 	"database/sql"
 	"fmt"
 	"log"
 	"os"
-	"time"
-
-	entities "google-flights-crawler/entities"
 )
 
 type DBConfig struct {
@@ -35,32 +32,7 @@ func DbConnection(cfg DBConfig) *sql.DB {
 	return db
 }
 
-func SaveFlightsInDB(db *sql.DB, r *entities.SearchResult) error {
-	_, err := db.Exec(
-		"INSERT INTO flight_crawled (origin, destination, airline, stops, price, flightDate, searchDate) VALUES (?, ?, ?, ?, ?, ?, ?)",
-		r.Origin,
-		r.Destination,
-		r.BestFlights[0].Airline, 
-		r.BestFlights[0].Stops, 
-		r.BestFlights[0].Price, 
-		r.Date,
-		time.Now().Format("2006-01-02 15:04:05"),
-	)
-	return err
-}
-
-func SaveWishlistAmazonPricesInDB(db *sql.DB, r *entities.WishlistItem) error {
-	_, err := db.Exec(
-		"INSERT INTO wishlist_amazon (title, price, link, search_date) VALUES (?, ?, ?, ?)",
-		r.Title,
-		r.Price,
-		r.Link,
-		time.Now().Format("2006-01-02 15:04:05"),
-	)
-	return err
-}
-
-func CreateDatabaseConnection() *sql.DB {
+func CreateDatabaseConnectionFactory() *sql.DB {
 	cfg := DBConfig{
 		Username: os.Getenv("DB_USER"),
 		Password: os.Getenv("DB_PASSWORD"),

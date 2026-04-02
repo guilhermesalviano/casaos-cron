@@ -2,10 +2,9 @@ package utils
 
 import (
 	"encoding/csv"
+	"log"
 	"os"
 	"strconv"
-
-	notifier "google-flights-crawler/notifier"
 )
 
 type SchedulersCsv struct {
@@ -89,9 +88,9 @@ func LoadSearchParams(filePath string, SchedulerType string) ([]SchedulersCsv, e
 func LoadSchedulersFromCSV(filePath string, SchedulerType string) ([]SchedulersCsv) {
 	schedulers, err := LoadSearchParams(filePath, SchedulerType)
 	if err != nil {
-		schedulers, err = LoadSearchParams("./schedulers.csv", SchedulerType)
+		schedulers, err = LoadSearchParams("./pkg/config/schedules.csv", SchedulerType)
 		if err != nil {
-			notifier.Notify("Error loading search params: " + err.Error())
+			log.Printf("Error loading search params: %v", err)
 			os.Exit(1)
 		}
 	}

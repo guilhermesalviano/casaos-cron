@@ -1,4 +1,4 @@
-package entities
+package domain
 
 type Flight struct {
 	Airline       string  `json:"airline"`

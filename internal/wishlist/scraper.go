@@ -1,4 +1,4 @@
-package lib
+package wishlist
 
 import (
 	"fmt"
@@ -7,11 +7,11 @@ import (
 	"strings"
 	
 	"github.com/gocolly/colly/v2"
-	"google-flights-crawler/entities"
+	"google-flights-crawler/domain"
 )
 
-func ScrapeAmazonWishlist() ([]entities.WishlistItem, error) {
-	var items []entities.WishlistItem
+func ScrapeAmazonWishlist() ([]domain.WishlistItem, error) {
+	var items []domain.WishlistItem
 
 	c := colly.NewCollector(
 		colly.UserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"),
@@ -35,7 +35,7 @@ func ScrapeAmazonWishlist() ([]entities.WishlistItem, error) {
 		}
 
 		if title != "" {
-			items = append(items, entities.WishlistItem{
+			items = append(items, domain.WishlistItem{
 				Title: title,
 				Price: price,
 				Link:  e.Request.AbsoluteURL(link),

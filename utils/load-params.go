@@ -2,7 +2,7 @@ package utils
 
 import (
 	"flag"
-	"google-flights-crawler/notifier"
+	"log"
 	"os"
 	"time"
 )
@@ -30,7 +30,7 @@ func GetApiKey() *string {
 	flag.Parse()
 
 	if *key == "" {
-		notifier.Notify("SERPAPI_KEY não definida. Use a env var ou o flag -key")
+		log.Printf("SERPAPI_KEY não definida. Use a env var ou o flag -key")
 	}
 
 	return key

@@ -1,4 +1,4 @@
-package notifier
+package notify
 
 import (
 	"errors"
@@ -43,6 +43,7 @@ var validTags = map[Tag]bool{
 	TagComputer:       true,
 	TagTada:           true,
 }
+
 func SendPush(push Push) {
 	topic := os.Getenv("NTFY_TOPIC")
 	if topic == "" {
